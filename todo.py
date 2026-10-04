@@ -41,8 +41,12 @@ def load_todos():
             data = json.load(f)
     except (json.JSONDecodeError, OSError):
         return []
-    # 防御性检查:正常情况应该是一个列表
-    return data if isinstance(data, list) else []
+    # 防御性检查:顶层应该是一个列表
+    if not isinstance(data, list):
+        return []
+    # 再逐项过滤,只保留形如 {"content": ..., "done": ...} 的对象。
+    # 否则 ["任务A"] 这类格式会让后面所有 .get() / ["done"] 调用直接抛异常。
+    return [item for item in data if isinstance(item, dict)]
 
 
 def save_todos(todos):
