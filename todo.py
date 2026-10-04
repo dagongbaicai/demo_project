@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+命令行待办清单(todo)
+
+用法:
+    python todo.py list            按序号列出所有任务
+                                   未完成显示 [ ],已完成显示 [x]
+    python todo.py add "内容"      添加一个任务
+
+说明:
+    任务数据保存在与本脚本同目录的 todos.json 中。
+    不带任何参数运行时会打印本说明。
+"""
+
+import json
+import sys
+from pathlib import Path
+
+# 数据文件固定在脚本所在目录,这样在任何工作目录下运行都读写同一个文件
+DATA_FILE = Path(__file__).resolve().parent / "todos.json"
+
+
+def load_todos():
+    """读取 todos.json,返回任务列表。
+
+    文件不存在、内容损坏或格式不对时一律按「空清单」处理,
+    避免因为一个坏文件就让整个程序报错退出。
+    """
+    if not DATA_FILE.exists():
+        return []
+    try:
+        with DATA_FILE.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return []
+    # 防御性检查:正常情况应该是一个列表
+    return data if isinstance(data, list) else []
+
+
+def save_todos(todos):
+    """把任务列表写回 todos.json。
+
+    ensure_ascii=False 让中文以原字面保存,文件可以直接阅读;
+    indent=2 让 JSON 有缩进,方便人查看和手工修改。
+    """
+    with DATA_FILE.open("w", encoding="utf-8") as f:
+        json.dump(todos, f, ensure_ascii=False, indent=2)
+
+
+def cmd_list():
+    """子命令 list:按序号列出所有任务。"""
+    todos = load_todos()
+
+    print("=== TODO 清单 ===")
+    if not todos:
+        print("（暂无任务）")
+        return
+
+    # enumerate 从 1 开始,让序号和用户看到的一致
+    for index, todo in enumerate(todos, start=1):
+        # done 为真显示 [x],否则显示 [ ]
+        mark = "[x]" if todo.get("done") else "[ ]"
+        print(f"{index}. {mark} {todo.get('content', '')}")
+
+
+def cmd_add(content):
+    """子命令 add:在清单末尾追加一个未完成的任务。"""
+    todos = load_todos()
+    todos.append({"content": content, "done": False})
+    save_todos(todos)
+    print(f"已添加:{content}")
+
+
+def main():
+    # sys.argv[0] 是脚本自身的路径,真正的参数从下标 1 开始
+    args = sys.argv[1:]
+
+    # 没给参数时打印用法说明,并以非零状态码退出
+    if not args:
+        print(__doc__.strip())
+        sys.exit(1)
+
+    command = args[0]
+
+    if command == "list":
+        cmd_list()
+
+    elif command == "add":
+        if len(args) < 2:
+            print('用法:python todo.py add "内容"')
+            sys.exit(1)
+        # 内容本身带空格时,shell 可能会把它拆成多个参数,这里重新拼回一句
+        cmd_add(" ".join(args[1:]))
+
+    else:
+        # 未知子命令:给出提示而不是静默失败
+        print(f"未知命令:{command}")
+        print(__doc__.strip())
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
