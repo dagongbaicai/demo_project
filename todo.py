@@ -10,8 +10,10 @@
     python todo.py done <序号>     把第 N 个任务标记为已完成
     python todo.py rm <序号>       删除第 N 个任务
     python todo.py stats          统计任务总数、已完成和未完成数量
+    python todo.py prio <序号>    把第 N 个任务标记为高优先级
 
     序号从 1 开始,与 list 输出的编号一一对应。
+    高优先级任务在 list 中于方括号后显示一个 !,例如 1. [ ]! 写报告。
 
 说明:
     任务数据保存在与本脚本同目录的 todos.json 中。
@@ -66,7 +68,9 @@ def cmd_list():
     for index, todo in enumerate(todos, start=1):
         # done 为真显示 [x],否则显示 [ ]
         mark = "[x]" if todo.get("done") else "[ ]"
-        print(f"{index}. {mark} {todo.get('content', '')}")
+        # 高优先级任务在方括号后紧跟一个 !,中间不留空格
+        flag = "!" if todo.get("priority") else ""
+        print(f"{index}. {mark}{flag} {todo.get('content', '')}")
 
 
 def cmd_add(content):
@@ -144,6 +148,20 @@ def cmd_stats():
     print(f"共 {total} 项，已完成 {done} 项，未完成 {total - done} 项")
 
 
+def cmd_prio(raw_index):
+    """子命令 prio:把第 N 个任务标记为高优先级。"""
+    todos = load_todos()
+
+    # 序号校验复用 parse_index,与 done / rm 的行为保持一致
+    index = parse_index(raw_index, len(todos))
+    if index is None:
+        return
+
+    todos[index - 1]["priority"] = True
+    save_todos(todos)
+    print(f"已标记为高优先级：{todos[index - 1].get('content', '')}")
+
+
 def main():
     # sys.argv[0] 是脚本自身的路径,真正的参数从下标 1 开始
     args = sys.argv[1:]
@@ -180,6 +198,12 @@ def main():
     elif command == "stats":
         # 纯统计,不需要额外参数
         cmd_stats()
+
+    elif command == "prio":
+        if len(args) < 2:
+            print("用法:python todo.py prio <序号>")
+            sys.exit(1)
+        cmd_prio(args[1])
 
     else:
         # 未知子命令:给出提示而不是静默失败
