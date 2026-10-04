@@ -9,6 +9,7 @@
     python todo.py add "内容"      添加一个任务
     python todo.py done <序号>     把第 N 个任务标记为已完成
     python todo.py rm <序号>       删除第 N 个任务
+    python todo.py stats          统计任务总数、已完成和未完成数量
 
     序号从 1 开始,与 list 输出的编号一一对应。
 
@@ -131,6 +132,18 @@ def cmd_rm(raw_index):
     print(f"已删除：{removed.get('content', '')}")
 
 
+def cmd_stats():
+    """子命令 stats:统计任务总数、已完成数和未完成数。"""
+    todos = load_todos()
+
+    total = len(todos)
+    # done 为真的才计入已完成,缺失该字段时按未完成处理
+    done = sum(1 for todo in todos if todo.get("done"))
+
+    # 未完成直接用总数减去已完成,不必再遍历一遍清单
+    print(f"共 {total} 项，已完成 {done} 项，未完成 {total - done} 项")
+
+
 def main():
     # sys.argv[0] 是脚本自身的路径,真正的参数从下标 1 开始
     args = sys.argv[1:]
@@ -163,6 +176,10 @@ def main():
             print("用法:python todo.py rm <序号>")
             sys.exit(1)
         cmd_rm(args[1])
+
+    elif command == "stats":
+        # 纯统计,不需要额外参数
+        cmd_stats()
 
     else:
         # 未知子命令:给出提示而不是静默失败
