@@ -1,2 +1,53 @@
-# Claude Code 本地配置(因人而异,不纳入版本控制)
+# ==================== Claude Code 本地配置 ====================
+# 因人而异,不纳入版本控制
 .claude/
+
+# ==================== Python ====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+venv/
+.venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ==================== Node / 前端 ====================
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.next/
+.nuxt/
+coverage/
+
+# ==================== 编辑器 / IDE ====================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ==================== 操作系统 ====================
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store
+$RECYCLE.BIN/
+
+# ==================== 通用 ====================
+# 日志与临时文件
+*.log
+*.tmp
+# 环境变量与密钥,避免误传敏感信息
+.env
+.env.local
