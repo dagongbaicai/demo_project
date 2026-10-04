@@ -7,6 +7,10 @@
     python todo.py list            按序号列出所有任务
                                    未完成显示 [ ],已完成显示 [x]
     python todo.py add "内容"      添加一个任务
+    python todo.py done <序号>     把第 N 个任务标记为已完成
+    python todo.py rm <序号>       删除第 N 个任务
+
+    序号从 1 开始,与 list 输出的编号一一对应。
 
 说明:
     任务数据保存在与本脚本同目录的 todos.json 中。
@@ -72,6 +76,61 @@ def cmd_add(content):
     print(f"已添加:{content}")
 
 
+def parse_index(raw, total):
+    """把命令行传来的序号解析成从 1 开始的下标。
+
+    done 和 rm 都要做同样的校验,所以抽出来共用。
+    校验不通过时打印友好提示并返回 None,由调用方决定怎么收场,
+    这样任何非法输入都不会让程序抛异常崩掉。
+    """
+    # 清单为空时,任何序号都没有意义,提前拦掉避免下面的范围提示自相矛盾
+    if total == 0:
+        print("清单为空,没有可操作的任务")
+        return None
+
+    try:
+        index = int(raw)
+    except ValueError:
+        # 传进来的是 abc、1.5 这类没法转成整数的东西
+        print(f"序号必须是数字:{raw}")
+        return None
+
+    # 序号从 1 开始,合法范围是 1 ~ 任务总数
+    if index < 1 or index > total:
+        print(f"序号超出范围:{index}(当前共 {total} 个任务,有效范围 1-{total})")
+        return None
+
+    return index
+
+
+def cmd_done(raw_index):
+    """子命令 done:把第 N 个任务标记为已完成。"""
+    todos = load_todos()
+
+    index = parse_index(raw_index, len(todos))
+    if index is None:
+        return
+
+    # 下标要减 1,因为列表从 0 开始而序号从 1 开始
+    todos[index - 1]["done"] = True
+    save_todos(todos)
+    print(f"已完成：{todos[index - 1].get('content', '')}")
+
+
+def cmd_rm(raw_index):
+    """子命令 rm:删除第 N 个任务。"""
+    todos = load_todos()
+
+    index = parse_index(raw_index, len(todos))
+    if index is None:
+        return
+
+    # pop 会返回被删掉的那一项,用来在提示里回显它的内容
+    removed = todos.pop(index - 1)
+    save_todos(todos)
+    print(f"已删除：{removed.get('content', '')}")
+
+
 def main():
     # sys.argv[0] 是脚本自身的路径,真正的参数从下标 1 开始
     args = sys.argv[1:]
@@ -92,6 +151,18 @@ def main():
             sys.exit(1)
         # 内容本身带空格时,shell 可能会把它拆成多个参数,这里重新拼回一句
         cmd_add(" ".join(args[1:]))
+
+    elif command == "done":
+        if len(args) < 2:
+            print("用法:python todo.py done <序号>")
+            sys.exit(1)
+        cmd_done(args[1])
+
+    elif command == "rm":
+        if len(args) < 2:
+            print("用法:python todo.py rm <序号>")
+            sys.exit(1)
+        cmd_rm(args[1])
 
     else:
         # 未知子命令:给出提示而不是静默失败
